@@ -7,15 +7,16 @@ import {
   LineElement,
   CategoryScale,
   LinearScale,
+  BarElement,
   PointElement,
   Tooltip,
   Legend,
 } from "chart.js";
-
+import { Bar } from "react-chartjs-2";
 // โหลดแผนที่แบบ dynamic เพื่อลดปัญหา SSR
 const Map = dynamic(() => import("../components/Map"), { ssr: false });
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
+ChartJS.register(LineElement, CategoryScale, LinearScale, BarElement, PointElement, Tooltip, Legend);
 
 interface WeatherData {
   name: string;
@@ -70,19 +71,27 @@ export default function Dashboard() {
   };
 
   const chartData = data
-    ? {
-        labels: ["อุณหภูมิ (°C)", "ความชื้น (%)"],
-        datasets: [
-          {
-            label: "ข้อมูลสภาพอากาศ",
-            data: [data.main.temp, data.main.humidity],
-            fill: false,
-            borderColor: "rgb(75, 192, 192)",
-            tension: 0.3,
-          },
-        ],
-      }
-    : null;
+  ? {
+      labels: ["อุณหภูมิ (°C)", "ความชื้น (%)", "ความเร็วลม (m/s)"],
+      datasets: [
+        {
+          label: "ค่าที่วัดได้",
+          data: [data.main.temp, data.main.humidity, data.wind.speed],
+          backgroundColor: [
+            "rgba(255, 99, 132, 0.6)", // แดง
+            "rgba(54, 162, 235, 0.6)", // น้ำเงิน
+            "rgba(75, 192, 192, 0.6)", // เขียวฟ้า
+          ],
+          borderColor: [
+            "rgb(255, 99, 132)",
+            "rgb(54, 162, 235)",
+            "rgb(75, 192, 192)",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    }
+  : null;
 
   return (
     <div className="w-full mx-auto px-4 py-10 space-y-6">
@@ -111,12 +120,12 @@ export default function Dashboard() {
       <>
         <div className="flex flex-col md:flex-row gap-4">
           {/* ข้อมูล */}
-          <div className="bg-white rounded-xl shadow-lg p-6 space-y-2 flex-1">
+          <div className="bg-white rounded-xl shadow-lg p-6 space-y-4 flex-1">
             <h2 className="text-xl font-semibold text-center">{data.name}</h2>
-            <p>🌡 <span className="font-medium">อุณหภูมิ:</span> {data.main.temp} °C</p>
-            <p>💧 <span className="font-medium">ความชื้น:</span> {data.main.humidity} %</p>
-            <p>🌬 <span className="font-medium">ความเร็วลม:</span> {data.wind.speed} m/s</p>
-            <p>⛅ <span className="font-medium">สภาพอากาศ:</span> {data.weather[0].description}</p>
+            <p>🌡 <span className="text-lg font-medium">อุณหภูมิ:</span> {data.main.temp} °C</p>
+            <p>💧 <span className="text-lg font-medium">ความชื้น:</span> {data.main.humidity} %</p>
+            <p>🌬 <span className="text-lg font-medium">ความเร็วลม:</span> {data.wind.speed} m/s</p>
+            <p>⛅ <span className="text-lg font-medium">สภาพอากาศ:</span> {data.weather[0].description}</p>
           </div>
 
           {/* แผนที่ */}
@@ -135,7 +144,7 @@ export default function Dashboard() {
         {chartData && (
           <div className="bg-white p-6 rounded-xl shadow-md">
             <h3 className="text-lg font-bold mb-2">📈 กราฟแสดงข้อมูล</h3>
-            <Line data={chartData} />
+            <Bar data={chartData} />
           </div>
         )}
       </>
