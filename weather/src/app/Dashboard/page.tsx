@@ -13,6 +13,8 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { dashboardTranslations } from "../translations/dashboard";
+import Navbar from "../components/Navbar";
 // โหลดแผนที่แบบ dynamic เพื่อลดปัญหา SSR
 const Map = dynamic(() => import("../components/Map"), { ssr: false });
 
@@ -38,21 +40,24 @@ export default function Dashboard() {
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<"th" | "en">("th");
+  const t = (key: keyof typeof dashboardTranslations) => dashboardTranslations[key][language];
 
   const API_KEY = "e9a535eebda5c1ddc55ab39f9835d774";
 
   const fetchWeather = async (cityName: string) => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${API_KEY}&units=metric`
+      // กลับมาใช้การค้นหาด้วยชื่อเมือง (ภาษาอังกฤษ) แบบเดิม
+      const weatherRes = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${API_KEY}&units=metric&lang=${language}`
       );
-      const result = await res.json();
-      if (res.ok) {
-        setData(result);
+      const weather = await weatherRes.json();
+      if (weatherRes.ok) {
+        setData(weather);
         setError(null);
       } else {
-        setError(result.message);
+        setError(weather.message || t("error"));
         setData(null);
       }
     } catch (err: any) {
@@ -65,6 +70,23 @@ export default function Dashboard() {
     fetchWeather(city);
   }, []);
 
+  // เมื่อสลับภาษา ให้รีเฟรชข้อมูลเพื่ออัปเดตคำอธิบายสภาพอากาศตามภาษาใหม่
+  useEffect(() => {
+    if (data) {
+      fetchWeather(city);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "top" as const } },
+    scales: {
+      y: { ticks: { stepSize: 5 } },
+    },
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchWeather(city);
@@ -72,15 +94,15 @@ export default function Dashboard() {
 
   const chartData = data
   ? {
-      labels: ["อุณหภูมิ (°C)", "ความชื้น (%)", "ความเร็วลม (m/s)"],
+      labels: [t("tempLabel"), t("humidityLabel"), t("windLabel")],
       datasets: [
         {
-          label: "ค่าที่วัดได้",
+          label: t("measured"),
           data: [data.main.temp, data.main.humidity, data.wind.speed],
           backgroundColor: [
-            "rgba(255, 99, 132, 0.6)", // แดง
-            "rgba(54, 162, 235, 0.6)", // น้ำเงิน
-            "rgba(75, 192, 192, 0.6)", // เขียวฟ้า
+            "rgba(255, 99, 132, 0.6)",
+            "rgba(54, 162, 235, 0.6)",
+            "rgba(75, 192, 192, 0.6)",
           ],
           borderColor: [
             "rgb(255, 99, 132)",
@@ -94,43 +116,56 @@ export default function Dashboard() {
   : null;
 
   return (
-    <div className="w-full mx-auto px-4 py-10 space-y-6">
-      <h1 className="text-3xl font-bold text-center mb-4">🌎 Global Weather Dashboard</h1>
+    <>
+    <Navbar
+        language={language}
+        onToggle={() => setLanguage((prev) => (prev === "th" ? "en" : "th"))}
+        title={`🌎 ${t("title")}`}
+      />
 
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+    <div className="w-full mx-auto px-4 py-6 md:py-10 space-y-6">
+      
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-4">
         <input
           type="text"
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          placeholder="กรอกชื่อเมือง เช่น London"
+          placeholder={t("placeholder")}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <button type="submit" className="w-full sm:w-auto px-4 py-2  bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          {t("search")}
+        </button>
         <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          type="button"
+          onClick={() => {
+            setCity("");
+            setData(null);
+            setError(null);
+          }}
+          className="w-full sm:w-auto px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
         >
-          ค้นหา
+          {t("clear")}
         </button>
       </form>
 
-      {loading && <p className="text-center text-gray-600">⏳ กำลังโหลดข้อมูล...</p>}
-      {error && <p className="text-center text-red-500">❌ {error}</p>}
+      {loading && <p className="text-center text-gray-600">⏳ {t("loading")}</p>}
+      {error && <p className="text-center text-red-500">❌ {t("error")} {error}</p>}
 
       {data && (
       <>
         <div className="flex flex-col md:flex-row gap-4">
-          {/* ข้อมูล */}
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-4 flex-1">
             <h2 className="text-xl font-semibold text-center">{data.name}</h2>
-            <p>🌡 <span className="text-lg font-medium">อุณหภูมิ:</span> {data.main.temp} °C</p>
-            <p>💧 <span className="text-lg font-medium">ความชื้น:</span> {data.main.humidity} %</p>
-            <p>🌬 <span className="text-lg font-medium">ความเร็วลม:</span> {data.wind.speed} m/s</p>
-            <p>⛅ <span className="text-lg font-medium">สภาพอากาศ:</span> {data.weather[0].description}</p>
+            <p>🌡 <span className="text-lg font-medium">{t("temp")}:</span> {data.main.temp} °C</p>
+            <p>💧 <span className="text-lg font-medium">{t("humidity")}:</span> {data.main.humidity} %</p>
+            <p>🌬 <span className="text-lg font-medium">{t("wind")}:</span> {data.wind.speed} m/s</p>
+            <p>⛅ <span className="text-lg font-medium">{t("weather")}:</span> {data.weather[0].description}</p>
           </div>
 
           {/* แผนที่ */}
           <div className="bg-white p-6 rounded-xl shadow-md flex-1 min-h-[300px]">
-            <h3 className="text-lg font-bold mb-2">🗺 ตำแหน่งบนแผนที่</h3>
+            <h3 className="text-lg font-bold mb-2">🗺 {t("mapTitle")}</h3>
             <Map
               lat={data.coord.lat}
               lon={data.coord.lon}
@@ -140,15 +175,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* กราฟ */}
         {chartData && (
           <div className="bg-white p-6 rounded-xl shadow-md">
-            <h3 className="text-lg font-bold mb-2">📈 กราฟแสดงข้อมูล</h3>
-            <Bar data={chartData} />
+            <h3 className="text-lg font-bold mb-2">📈 {t("chartTitle")}</h3>
+            <div className="h-64 md:h-80">
+              <Bar data={chartData} options={chartOptions} />
+            </div>
           </div>
         )}
       </>
     )}
     </div>
+    </>
   );
 }
