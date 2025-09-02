@@ -1,20 +1,19 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { Line } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  LineElement,
-  CategoryScale,
-  LinearScale,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LineElement,
+  LinearScale,
   PointElement,
   Tooltip,
-  Legend,
 } from "chart.js";
+import dynamic from "next/dynamic";
+import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
-import { dashboardTranslations } from "../translations/dashboard";
 import Navbar from "../components/Navbar";
+import { dashboardTranslations } from "../translations/dashboard";
 // โหลดแผนที่แบบ dynamic เพื่อลดปัญหา SSR
 const Map = dynamic(() => import("../components/Map"), { ssr: false });
 
@@ -48,7 +47,6 @@ export default function Dashboard() {
   const fetchWeather = async (cityName: string) => {
     setLoading(true);
     try {
-      // กลับมาใช้การค้นหาด้วยชื่อเมือง (ภาษาอังกฤษ) แบบเดิม
       const weatherRes = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${API_KEY}&units=metric&lang=${language}`
       );
@@ -60,8 +58,12 @@ export default function Dashboard() {
         setError(weather.message || t("error"));
         setData(null);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unexpected error");
+      }
     }
     setLoading(false);
   };
@@ -70,12 +72,10 @@ export default function Dashboard() {
     fetchWeather(city);
   }, []);
 
-  // เมื่อสลับภาษา ให้รีเฟรชข้อมูลเพื่ออัปเดตคำอธิบายสภาพอากาศตามภาษาใหม่
   useEffect(() => {
     if (data) {
       fetchWeather(city);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   const chartOptions = {
