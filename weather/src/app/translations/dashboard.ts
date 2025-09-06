@@ -1,6 +1,6 @@
 export const dashboardTranslations = {
   title: { th: "แดชบอร์ดสภาพอากาศ", en: "Global Weather Dashboard" },
-  placeholder: { th: "กรอกชื่อเมือง เช่น London", en: "Enter a city, e.g. London" },
+  placeholder: { th: "กรอกชื่อจังหวัด เช่น London", en: "Enter a Province, e.g. London" },
   search: { th: "ค้นหา", en: "Search" },
   clear: { th: "ล้างข้อมูล", en: "Clear" },
   loading: { th: "กำลังโหลดข้อมูล...", en: "Loading data..." },
