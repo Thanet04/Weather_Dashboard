@@ -23,7 +23,7 @@ export default function Map({ lat, lon, name, description }: MapProps) {
       center={[lat, lon] as [number, number]}
       zoom={10}
       scrollWheelZoom={false}
-      style={{ height: "300px", width: "100%" }}
+      style={{ height: "300px", width: "100%", zIndex: 10, position: "relative" }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
